@@ -2,30 +2,20 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { signIn, signUp } from "@/app/actions/auth";
+import { signIn, signUp, type AuthActionResult } from "@/app/actions/auth";
 
 type AuthMode = "login" | "signup";
 
-type AuthState = { error: string | null };
+type AuthState = AuthActionResult;
 
 const initialState: AuthState = { error: null };
 
 async function signInStateAction(_: AuthState, formData: FormData): Promise<AuthState> {
-  try {
-    await signIn(formData);
-    return { error: null };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Unable to sign in." };
-  }
+  return signIn(formData);
 }
 
 async function signUpStateAction(_: AuthState, formData: FormData): Promise<AuthState> {
-  try {
-    await signUp(formData);
-    return { error: null };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Unable to sign up." };
-  }
+  return signUp(formData);
 }
 
 export function AuthForm({ mode }: { mode: AuthMode }) {

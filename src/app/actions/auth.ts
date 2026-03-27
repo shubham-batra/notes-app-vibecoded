@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
+export type AuthActionResult = { error: string | null };
+
 function normalizeEmail(value: FormDataEntryValue | null): string {
   return String(value ?? "")
     .trim()
@@ -14,21 +16,26 @@ function normalizePassword(value: FormDataEntryValue | null): string {
   return String(value ?? "").trim();
 }
 
-function validateAuthInputs(email: string, password: string) {
+function validateAuthInputs(email: string, password: string): string | null {
   if (!email || !password) {
-    throw new Error("Email and password are required.");
+    return "Email and password are required.";
   }
 
   if (password.length < 8) {
-    throw new Error("Password must be at least 8 characters.");
+    return "Password must be at least 8 characters.";
   }
+
+  return null;
 }
 
-export async function signUp(formData: FormData) {
+export async function signUp(formData: FormData): Promise<AuthActionResult> {
   const email = normalizeEmail(formData.get("email"));
   const password = normalizePassword(formData.get("password"));
 
-  validateAuthInputs(email, password);
+  const validationError = validateAuthInputs(email, password);
+  if (validationError) {
+    return { error: validationError };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
@@ -37,18 +44,21 @@ export async function signUp(formData: FormData) {
   });
 
   if (error) {
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   revalidatePath("/", "layout");
   redirect("/notes");
 }
 
-export async function signIn(formData: FormData) {
+export async function signIn(formData: FormData): Promise<AuthActionResult> {
   const email = normalizeEmail(formData.get("email"));
   const password = normalizePassword(formData.get("password"));
 
-  validateAuthInputs(email, password);
+  const validationError = validateAuthInputs(email, password);
+  if (validationError) {
+    return { error: validationError };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({
@@ -57,7 +67,7 @@ export async function signIn(formData: FormData) {
   });
 
   if (error) {
-    throw new Error(error.message);
+    return { error: error.message };
   }
 
   revalidatePath("/", "layout");
